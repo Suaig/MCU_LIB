@@ -1,2 +1,2 @@
 # MCU_LIB
-LIB FOR MCU OLED I2C AND SO ON
+单片机通用库，采用C面向对象，可以无修改运行于标准C语言编译器，51，STM32 STM8等。
