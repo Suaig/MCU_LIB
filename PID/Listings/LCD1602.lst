@@ -1,0 +1,156 @@
+C51 COMPILER V9.59.0.0   LCD1602                                                           05/05/2019 12:33:12 PAGE 1   
+
+
+C51 COMPILER V9.59.0.0, COMPILATION OF MODULE LCD1602
+OBJECT MODULE PLACED IN .\Objects\LCD1602.obj
+COMPILER INVOKED BY: H:\Keil_v5\C51\BIN\C51.EXE LCD1602.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings\L
+                    -CD1602.lst) TABS(2) OBJECT(.\Objects\LCD1602.obj)
+
+line level    source
+
+   1          #include "LCD1602.h"
+   2          #include <intrins.h>
+   3          //内部函数，仅本文件内可调用
+   4          uint8_t row=0,cow=0;
+   5          code uint8_t DDRAM[]={0x80,0xC0};
+   6          void delay()    //@12.000MHz
+   7          {
+   8   1        unsigned char i, j;
+   9   1      
+  10   1        i = 2;
+  11   1        j = 239;
+  12   1        do
+  13   1        {
+  14   2          while (--j);
+  15   2        } while (--i);
+  16   1      }
+  17          
+  18          static void Busy_Wait()
+  19          {
+  20   1        uint8_t LCD_Status;
+  21   1        do
+  22   1        {
+  23   2          DATA=0xFF;
+  24   2          EN=0;RS=0;RW=1;
+  25   2          EN=1;LCD_Status=DATA;
+  26   2          EN=0;
+  27   2        }
+  28   1        while(LCD_Status&0x80);
+  29   1        //while(0);
+  30   1      }
+  31          static void Write_LCD_Command(uint8_t cmd)
+  32          {
+  33   1        Busy_Wait();
+  34   1        EN=0;RS=0;RW=0;
+  35   1        DATA=cmd;
+  36   1        EN=1;_nop_();EN=0;
+  37   1      }
+  38          static void Write_LDC_Data(uint8_t dat)
+  39          {
+  40   1        Busy_Wait();
+  41   1        EN=0;RS=1;RW=0;
+  42   1        DATA=dat;
+  43   1        EN=1;_nop_();EN=0;
+  44   1      }
+  45          //坐标转到下一行
+  46          static void LCD_Next()
+  47          {
+  48   1        row++;
+  49   1        if(row == 16)
+  50   1        {
+  51   2          cow++;
+  52   2          cow = cow&0x01;
+  53   2        }
+  54   1        row = row&0x0F;
+C51 COMPILER V9.59.0.0   LCD1602                                                           05/05/2019 12:33:12 PAGE 2   
+
+  55   1      }
+  56          
+  57          
+  58          //基础接口
+  59          void LCD_Init()
+  60          {
+  61   1        Write_LCD_Command(0x38);delay();
+  62   1        Write_LCD_Command(0x01);delay();
+  63   1        Write_LCD_Command(0x06);delay();
+  64   1        Write_LCD_Command(0x0C);delay();
+  65   1      }
+  66          
+  67          // - - 设置显示位置
+  68          void LCD_setCursor(uint8_t x,uint8_t y)
+  69          {
+  70   1        if((x>=16) || (y>=2)) return;
+  71   1        row = x;
+  72   1        cow = y;
+  73   1        Write_LCD_Command(DDRAM[y]|x);
+  74   1      }
+  75          void LCD_gohome()
+  76          {
+  77   1        LCD_setCursor(0,0);
+  78   1      }
+  79          void LCD_Clear()
+  80          {
+  81   1        Write_LCD_Command(0x01);
+  82   1      }
+  83          //在指定位置输入一个字符
+  84          void LCD_putchar(uint8_t x,uint8_t y,uint8_t dat) 
+  85          {
+  86   1        LCD_setCursor(x,y);
+  87   1        Write_LDC_Data(dat);
+  88   1      }
+  89          //在指定位置输出一个字符串
+  90          void LCD_PutString(uint8_t x,uint8_t y,uint8_t *str)
+  91          {
+  92   1        uint8_t i=0;
+  93   1        LCD_setCursor(x,y);
+  94   1         for(i=0;str[i]!='\0';i++)
+  95   1        {
+  96   2          Write_LDC_Data(str[i]);
+  97   2          LCD_Next();
+  98   2        }
+  99   1      }
+ 100          //高级接口
+ 101          void LCD_write(uint8_t dat)//自动换行的写入一个字符串
+ 102          {
+ 103   1        if(row == 0)LCD_setCursor(row,cow);
+ 104   1        if(dat == 0x0A)
+ 105   1        {
+ 106   2          cow = ((++cow)%2);
+ 107   2          LCD_setCursor(0,cow);
+ 108   2          return;
+ 109   2        }
+ 110   1        LCD_Next();
+ 111   1        Write_LDC_Data(dat);
+ 112   1      }
+ 113          //自动换行的字符串打印
+ 114          void LCD_print(uint8_t *s)
+ 115          {
+ 116   1        while(*s!='\0')
+C51 COMPILER V9.59.0.0   LCD1602                                                           05/05/2019 12:33:12 PAGE 3   
+
+ 117   1        {
+ 118   2        LCD_write(*s);
+ 119   2        s++;
+ 120   2        }
+ 121   1      }
+ 122          
+ 123          /******printf重定向到LCD1602*******/
+ 124          char putchar(char c)
+ 125          {
+ 126   1          LCD_write(c);
+ 127   1          return c;
+ 128   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    277    ----
+   CONSTANT SIZE    =      2    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      2       3
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

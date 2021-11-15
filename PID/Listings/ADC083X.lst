@@ -1,0 +1,212 @@
+C51 COMPILER V9.59.0.0   ADC083X                                                           05/05/2019 12:33:12 PAGE 1   
+
+
+C51 COMPILER V9.59.0.0, COMPILATION OF MODULE ADC083X
+OBJECT MODULE PLACED IN .\Objects\ADC083X.obj
+COMPILER INVOKED BY: H:\Keil_v5\C51\BIN\C51.EXE ADC083X.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings\A
+                    -DC083X.lst) TABS(2) OBJECT(.\Objects\ADC083X.obj)
+
+line level    source
+
+   1          
+   2          //==============================================================================//2005-03-28...2005-03-29/
+             -/ADC0834模块的C51程序源文件//File Name=ADC083X.c//======================================================================
+             -========#include #include 
+   3           
+   4          //==============================================================================
+   5          //2005-03-28...2005-03-29
+   6          //ADC0834模块的C51程序源文件
+   7          //File Name=ADC083X.c
+   8          //==============================================================================
+   9          #include "ADC083X.h"
+  10          
+  11          //外部全局变量的预定义
+  12          
+  13          //*******************************************************
+  14          //序号:
+  15          //        HD_ADC083X_S01
+  16          //功能:    
+  17          //        端口初始化
+  18          //输入:    
+  19          //        无
+  20          //输出:    
+  21          //        无
+  22          //********************************************************
+  23          void adc083x_init(void)
+  24          {
+  25   1          SET_ADC083X_CS;
+  26   1          SET_ADC083X_DO;
+  27   1          CLR_ADC083X_CLK;
+  28   1      
+  29   1      #if TYPE_VAL >=ADC0832
+  30   1          SET_ADC083X_DI;
+  31   1      #endif
+  32   1      
+  33   1      #if TYPE_VAL >=ADC0834
+                  SET_ADC083X_SARS;
+              #endif
+  36   1      
+  37   1      }
+  38          
+  39          //*******************************************************
+  40          //序号:
+  41          //        HD_ADC083X_S02
+  42          //功能:    
+  43          //        读出AD数据字节
+  44          //输入:    
+  45          //        chanel    通道号以及单、双端设置选择,它的值被类型值限制！
+  46          //            即有效值是select分别取最低4、3、2位或不使用
+  47          //            具体的值参见pdf文档!
+  48          //输出:    
+  49          //        AD转换的结果字节
+  50          //********************************************************
+  51          unsigned char adc083x_do_one_change(unsigned char chanel)
+  52          {
+C51 COMPILER V9.59.0.0   ADC083X                                                           05/05/2019 12:33:12 PAGE 2   
+
+  53   1      unsigned char data ad_val;
+  54   1      unsigned char data i;
+  55   1      
+  56   1          //转换前的初始化
+  57   1          SET_ADC083X_CS;
+  58   1          CLR_ADC083X_CLK;
+  59   1          SET_ADC083X_DO;
+  60   1          
+  61   1          CLR_ADC083X_CS;
+  62   1      
+  63   1      //SARS引脚非必要时可以不使用,以节省引脚资源！
+  64   1      #if (TYPE_VAL==ADC0838)
+                /*
+                  //chanel_.3    .2     .1    .0    =0000 通道0+_通道1-, 
+              =001 通道2+_通道3-,(双端方式)
+                  //    SGL/DIF ODD/SIGN SELECT    SELECT    =0010 通道4+_通道5-, 
+              =011 通道6+_通道7-,(双端方式)
+                  //                    =0100 通道0-_通道1+, 
+              =0101 通道2-_通道3+,(双端方式)
+                  //                    =0110 通道4-_通道5+, 
+              =0111 通道6-_通道7+,(双端方式)
+                  //                    =1000 通道0+,    =1001 
+              通道2+,(单端方式)
+                  //                    =1010 通道4+,    =1011 
+              通道6+,(单端方式)
+                  //                    =1100 通道1+,    =1101 
+              通道3+,(单端方式)
+                  //                    =1110 通道5+,    =1111 
+              通道7+,(单端方式)
+              */
+              
+                  //引脚/SE可以接地,不使用其控制反响字节的输出延时功能！
+              
+                  chanel |=0x10;        //附加起始位
+                  for(i=0; i<5; i++)
+                  {
+                      if( (chanel &0x10)!=0)
+                      {
+                          SET_ADC083X_DI;
+                      }
+                      else
+                      {
+                          CLR_ADC083X_DI;
+                      }
+                      SET_ADC083X_CLK;
+                      CLR_ADC083X_CLK;
+                      chanel <<=1;
+                  }
+              
+              #elif (TYPE_VAL==ADC0834)
+                  /*
+                  //chanel_.2    .1     .0    =000 通道0+_通道1-, =001 通道2+_通
+              道3-,    (双端方式)
+                  //    SGL/DIF ODD/SIGN SELECT    =010 通道0-_通道1+, =011 通道2-_通
+              道3+,    (双端方式)
+                  //                =100 通道0+,        =101 通道2+,
+                  (单端方式)
+                  //                =110 通道1+,        =111 通道3+,
+                  (单端方式)
+              */
+                  chanel |=0x08;        //附加起始位
+                  for(i=0; i<4; i++)
+C51 COMPILER V9.59.0.0   ADC083X                                                           05/05/2019 12:33:12 PAGE 3   
+
+                  {
+                      if( (chanel &0x08)!=0)
+                      {
+                          SET_ADC083X_DI;
+                      }
+                      else
+                      {
+                          CLR_ADC083X_DI;
+                      }
+                      SET_ADC083X_CLK;
+                      CLR_ADC083X_CLK;
+                      chanel <<=1;
+                  }
+              
+              #elif (TYPE_VAL==ADC0832)
+ 130   1          /*
+ 131   1          //chanel_.1    .0        =00 通道0+_通道1-, =01 通道0-_通道
+ 132   1      1+,    (双端方式)
+ 133   1          //    SGL/DIF ODD/SIGN    =10 通道0+,       =11 通道1+,    
+ 134   1          (单端方式)
+ 135   1       */   
+ 136   1          chanel |=0x04;        //附加起始位
+ 137   1          for(i=0; i<3; i++)
+ 138   1          {
+ 139   2              if( (chanel &0x04)!=0)
+ 140   2              {
+ 141   3                  SET_ADC083X_DI;
+ 142   3              }
+ 143   2              else
+ 144   2              {
+ 145   3                  CLR_ADC083X_DI;
+ 146   3              }
+ 147   2              SET_ADC083X_CLK;
+ 148   2              CLR_ADC083X_CLK;
+ 149   2              chanel <<=1;
+ 150   2          }
+ 151   1      
+ 152   1      #else    //缺省时为ADC0831
+                  
+                  SET_ADC083X_CLK;
+                  CLR_ADC083X_CLK;
+                  
+              #endif
+ 158   1      
+ 159   1          SET_ADC083X_CLK;    //数据接收前的转换位
+ 160   1          CLR_ADC083X_CLK;
+ 161   1      
+ 162   1          for(ad_val=0, i=0; i<8; i++)
+ 163   1          {
+ 164   2              ad_val <<=1;
+ 165   2              SET_ADC083X_CLK;
+ 166   2              ad_val +=(JUDGE_ADC083X_DO ==1? 1:0);
+ 167   2              CLR_ADC083X_CLK;
+ 168   2          }    
+ 169   1          //对非ADC0831的型号而言,后续波形没有使用！
+ 170   1      
+ 171   1          SET_ADC083X_CS;
+ 172   1          return(ad_val);
+ 173   1      }
+ 174          
+ 175          //=============================================================================
+ 176          //End Of File 
+C51 COMPILER V9.59.0.0   ADC083X                                                           05/05/2019 12:33:12 PAGE 4   
+
+ 177          
+ 178           
+ 179           
+ 180           
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    241    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
